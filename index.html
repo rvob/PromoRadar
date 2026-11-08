@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0f1115">
+<title>Promo Radar</title>
+<link rel="manifest" href="manifest.json">
+<style>
+  :root{--bg:#0f1115;--card:#181b22;--line:#262a33;--txt:#e8eaed;--mut:#9aa0a6;--ok:#22c55e;--warn:#f59e0b}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);font:15px/1.4 system-ui,Segoe UI,Roboto,sans-serif}
+  header{padding:18px 16px 8px;max-width:1000px;margin:auto;display:flex;justify-content:space-between;align-items:center}
+  h1{margin:0;font-size:22px} h1 span{color:var(--ok)}
+  .gear{background:none;border:1px solid var(--line);color:var(--mut);border-radius:8px;padding:6px 10px;cursor:pointer}
+  main{max-width:1000px;margin:auto;padding:0 16px 40px}
+  form{display:flex;gap:8px;margin:8px 0 12px}
+  input[type=text],input[type=url]{flex:1;background:var(--card);border:1px solid var(--line);color:var(--txt);padding:12px;border-radius:10px;font-size:16px}
+  button.go{background:var(--ok);color:#06200f;border:0;border-radius:10px;padding:0 20px;font-weight:700;font-size:15px;cursor:pointer}
+  .bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
+  select{background:var(--card);color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:8px}
+  .chip{font-size:13px;color:var(--mut)}
+  .box{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px}
+  .box h2{margin:0 0 8px;font-size:15px}
+  .coupons{display:flex;flex-wrap:wrap;gap:8px}
+  .coupons a{background:#10131a;border:1px solid var(--line);color:var(--txt);text-decoration:none;padding:8px 12px;border-radius:999px;font-size:13px}
+  .coupons a:hover{border-color:var(--ok)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+  .item{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;text-decoration:none;color:inherit;position:relative}
+  .item:hover{border-color:var(--ok)}
+  .item img{width:100%;height:150px;object-fit:contain;background:#fff}
+  .item .b{padding:10px;display:flex;flex-direction:column;gap:4px;flex:1}
+  .t{font-size:13px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .p{font-size:20px;font-weight:700}
+  .old{font-size:12px;color:var(--mut);text-decoration:line-through}
+  .loja{font-size:12px;color:var(--mut);margin-top:auto}
+  .tag{position:absolute;top:8px;left:8px;background:var(--ok);color:#06200f;font-weight:700;font-size:12px;padding:2px 8px;border-radius:6px}
+  .best{position:absolute;top:8px;right:8px;background:var(--warn);color:#201400;font-weight:700;font-size:12px;padding:2px 8px;border-radius:6px}
+  .frete{font-size:12px;color:var(--ok)}
+  .aviso{color:var(--warn);font-size:13px;margin:4px 0}
+  .msg{color:var(--mut);text-align:center;padding:30px 0}
+  dialog{background:var(--card);color:var(--txt);border:1px solid var(--line);border-radius:12px;max-width:440px;width:92%}
+  dialog::backdrop{background:#000a}
+  dialog label{display:block;margin:8px 0 4px;font-size:13px;color:var(--mut)}
+  dialog .row{display:flex;gap:8px;margin-top:12px;justify-content:flex-end}
+  dialog button{border-radius:8px;padding:8px 14px;border:1px solid var(--line);background:#10131a;color:var(--txt);cursor:pointer}
+</style>
+</head>
+<body>
+<header>
+  <h1>Promo <span>Radar</span></h1>
+  <button class="gear" id="cfg" title="Configurar">⚙ Config</button>
+</header>
+<main>
+  <form id="f">
+    <input type="text" id="q" placeholder="Ex.: RX 580, fone bluetooth, air fryer..." autocomplete="off" required>
+    <button class="go" type="submit">Buscar</button>
+  </form>
+
+  <div class="bar" id="bar" hidden>
+    <select id="ord">
+      <option value="preco">Menor preço</option>
+      <option value="desc">Maior desconto</option>
+      <option value="maior">Maior preço</option>
+    </select>
+    <select id="lojaSel"><option value="">Todas as lojas</option></select>
+    <label class="chip"><input type="checkbox" id="soFrete"> Só frete grátis</label>
+    <span class="chip" id="cont"></span>
+  </div>
+
+  <div id="avisos"></div>
+  <div class="box" id="cupBox" hidden>
+    <h2>🏷️ Cupons e promoções para este produto</h2>
+    <div class="coupons" id="cup"></div>
+  </div>
+  <div class="grid" id="res"></div>
+  <div class="msg" id="msg">Digite um produto para comparar preços e achar cupons.</div>
+</main>
+
+<dialog id="dlg">
+  <h2 style="margin-top:0">Configuração</h2>
+  <label for="wurl">URL do seu Worker (Cloudflare)</label>
+  <input type="url" id="wurl" placeholder="https://promo-radar.seunome.workers.dev">
+  <div class="row"><button id="cancel" type="button">Cancelar</button><button id="save" type="button">Salvar</button></div>
+</dialog>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const brl = (n) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+const safeUrl = (u) => (/^https?:\/\//i.test(u) ? u : "#");
+
+let dados = [];
+
+function getWorker(){ try { return localStorage.getItem("workerUrl") || "https://promo-radar.rvob-tech.workers.dev"; } catch { return ""; } }
+function setWorker(v){ try { localStorage.setItem("workerUrl", v); } catch {} }
+
+const dlg = $("dlg");
+$("cfg").onclick = () => { $("wurl").value = getWorker(); dlg.showModal(); };
+$("cancel").onclick = () => dlg.close();
+$("save").onclick = () => { setWorker($("wurl").value.trim().replace(/\/+$/, "")); dlg.close(); };
+
+function desconto(i){ return i.precoOriginal && i.precoOriginal > i.preco ? Math.round((1 - i.preco / i.precoOriginal) * 100) : 0; }
+
+function render(){
+  const loja = $("lojaSel").value, soFrete = $("soFrete").checked, ord = $("ord").value;
+  let l = dados.filter((i) => (!loja || i.loja === loja) && (!soFrete || i.freteGratis));
+  if (ord === "preco") l.sort((a,b) => a.preco - b.preco);
+  if (ord === "maior") l.sort((a,b) => b.preco - a.preco);
+  if (ord === "desc") l.sort((a,b) => desconto(b) - desconto(a) || a.preco - b.preco);
+  const menor = Math.min(...dados.map((i) => i.preco));
+  $("cont").textContent = `${l.length} resultado(s)`;
+  $("res").innerHTML = l.map((i) => {
+    const d = desconto(i);
+    return `<a class="item" href="${esc(safeUrl(i.link))}" target="_blank" rel="noopener noreferrer">
+      ${d ? `<span class="tag">-${d}%</span>` : ""}${i.preco === menor ? `<span class="best">Menor preço</span>` : ""}
+      <img src="${esc(i.imagem)}" alt="" loading="lazy" referrerpolicy="no-referrer">
+      <div class="b"><div class="t">${esc(i.titulo)}</div>
+      <div class="p">${brl(i.preco)}</div>
+      ${d ? `<div class="old">${brl(i.precoOriginal)}</div>` : ""}
+      ${i.freteGratis ? `<div class="frete">Frete grátis</div>` : ""}
+      <div class="loja">${esc(i.loja)}</div></div></a>`;
+  }).join("");
+}
+
+$("f").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const w = getWorker();
+  if (!w) { $("cfg").click(); return; }
+  const q = $("q").value.trim();
+  $("msg").textContent = "Buscando..."; $("msg").hidden = false;
+  $("res").innerHTML = ""; $("avisos").innerHTML = ""; $("bar").hidden = true; $("cupBox").hidden = true;
+  try {
+    const r = await fetch(`${w}/?q=${encodeURIComponent(q)}`);
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.erro || r.status);
+    dados = d.itens || [];
+    $("avisos").innerHTML = (d.avisos || []).map((a) => `<div class="aviso">⚠ ${esc(a)}</div>`).join("");
+    $("cup").innerHTML = (d.cupons || []).map((c) => `<a href="${esc(safeUrl(c.url))}" target="_blank" rel="noopener noreferrer">${esc(c.nome)}</a>`).join("");
+    $("cupBox").hidden = false;
+    if (!dados.length) { $("msg").textContent = "Nenhum resultado de preço. Veja os links de cupons acima."; return; }
+    const lojas = [...new Set(dados.map((i) => i.loja))].sort();
+    $("lojaSel").innerHTML = `<option value="">Todas as lojas</option>` + lojas.map((x) => `<option>${esc(x)}</option>`).join("");
+    $("msg").hidden = true; $("bar").hidden = false;
+    render();
+  } catch (err) {
+    $("msg").textContent = "Erro na busca: " + err.message + " (confira a URL do Worker em Config)";
+  }
+});
+["ord","lojaSel","soFrete"].forEach((id) => $(id).addEventListener("change", render));
+
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+if (!getWorker()) $("msg").textContent = "Primeiro, toque em ⚙ Config e cole a URL do seu Worker.";
+</script>
+</body>
+</html>
