@@ -1,0 +1,17 @@
+{
+  "name": "Promo Radar",
+  "short_name": "Promo Radar",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0f1115",
+  "theme_color": "#0f1115",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='96' fill='%2316a34a'/%3E%3Ccircle cx='230' cy='230' r='110' fill='none' stroke='white' stroke-width='36'/%3E%3Cpath d='M312 312l100 100' stroke='white' stroke-width='40' stroke-linecap='round'/%3E%3C/svg%3E",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
